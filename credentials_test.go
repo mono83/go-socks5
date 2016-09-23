@@ -11,14 +11,14 @@ func TestStaticCredentials(t *testing.T) {
 	}
 
 	if !creds.Valid("foo", "bar") {
-		t.Fatalf("expect valid")
+		t.Fatal("expect valid")
 	}
 
 	if !creds.Valid("baz", "") {
-		t.Fatalf("expect valid")
+		t.Fatal("expect valid")
 	}
 
 	if creds.Valid("foo", "") {
-		t.Fatalf("expect invalid")
+		t.Fatal("expect invalid")
 	}
 }

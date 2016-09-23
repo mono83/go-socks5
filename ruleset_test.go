@@ -11,14 +11,14 @@ func TestPermitCommand(t *testing.T) {
 	r := &PermitCommand{true, false, false}
 
 	if _, ok := r.Allow(ctx, &Request{Command: ConnectCommand}); !ok {
-		t.Fatalf("expect connect")
+		t.Fatal("expect connect")
 	}
 
 	if _, ok := r.Allow(ctx, &Request{Command: BindCommand}); ok {
-		t.Fatalf("do not expect bind")
+		t.Fatal("do not expect bind")
 	}
 
 	if _, ok := r.Allow(ctx, &Request{Command: AssociateCommand}); ok {
-		t.Fatalf("do not expect associate")
+		t.Fatal("do not expect associate")
 	}
 }

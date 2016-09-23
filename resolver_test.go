@@ -16,6 +16,6 @@ func TestDNSResolver(t *testing.T) {
 	}
 
 	if !addr.IsLoopback() {
-		t.Fatalf("expected loopback")
+		t.Fatal("expected loopback")
 	}
 }

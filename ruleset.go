@@ -27,6 +27,7 @@ type PermitCommand struct {
 	EnableAssociate bool
 }
 
+// Allow allows command
 func (p *PermitCommand) Allow(ctx context.Context, req *Request) (context.Context, bool) {
 	switch req.Command {
 	case ConnectCommand:

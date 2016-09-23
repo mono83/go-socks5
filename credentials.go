@@ -8,6 +8,7 @@ type CredentialStore interface {
 // StaticCredentials enables using a map directly as a credential store
 type StaticCredentials map[string]string
 
+// Valid returns true if provided user and password are valid
 func (s StaticCredentials) Valid(user, password string) bool {
 	pass, ok := s[user]
 	if !ok {
