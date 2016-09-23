@@ -3,10 +3,10 @@ package socks5
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
-	"os"
 
+	"github.com/mono83/slf"
+	"github.com/mono83/slf/wd"
 	"golang.org/x/net/context"
 )
 
@@ -42,10 +42,6 @@ type Config struct {
 	// BindIP is used for bind or udp associate
 	BindIP net.IP
 
-	// Logger can be used to provide a custom log target.
-	// Defaults to stdout.
-	Logger *log.Logger
-
 	// Optional function for dialing out
 	Dial func(ctx context.Context, network, addr string) (net.Conn, error)
 }
@@ -55,6 +51,8 @@ type Config struct {
 type Server struct {
 	config      *Config
 	authMethods map[uint8]Authenticator
+
+	log slf.Logger
 }
 
 // New creates a new Server and potentially returns an error
@@ -78,11 +76,6 @@ func New(conf *Config) (*Server, error) {
 		conf.Rules = PermitAll()
 	}
 
-	// Ensure we have a log target
-	if conf.Logger == nil {
-		conf.Logger = log.New(os.Stdout, "", log.LstdFlags)
-	}
-
 	server := &Server{
 		config: conf,
 	}
@@ -92,6 +85,8 @@ func New(conf *Config) (*Server, error) {
 	for _, a := range conf.AuthMethods {
 		server.authMethods[a.GetCode()] = a
 	}
+
+	server.log = wd.NewLogger("socks5")
 
 	return server, nil
 }
@@ -110,8 +105,10 @@ func (s *Server) Serve(l net.Listener) error {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
+			s.log.Alert("Connetion error - :err", wd.ErrParam(err))
 			return err
 		}
+		s.log.Debug("New incoming connection from :addr", wd.StringParam("addr", conn.RemoteAddr().String()))
 		go s.ServeConn(conn)
 	}
 }
@@ -124,14 +121,14 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Read the version byte
 	version := []byte{0}
 	if _, err := bufConn.Read(version); err != nil {
-		s.config.Logger.Printf("[ERR] socks: Failed to get version byte: %v", err)
+		s.log.Error("socks: Failed to get version byte - :err", wd.ErrParam(err))
 		return err
 	}
 
 	// Ensure we are compatible
 	if version[0] != socks5Version {
 		err := fmt.Errorf("Unsupported SOCKS version: %v", version)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
+		s.log.Error("socks: :err", wd.ErrParam(err))
 		return err
 	}
 
@@ -139,7 +136,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	authContext, err := s.authenticate(conn, bufConn)
 	if err != nil {
 		err = fmt.Errorf("Failed to authenticate: %v", err)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
+		s.log.Error("socks: :err", wd.ErrParam(err))
 		return err
 	}
 
@@ -160,7 +157,7 @@ func (s *Server) ServeConn(conn net.Conn) error {
 	// Process the client request
 	if err := s.handleRequest(request, conn); err != nil {
 		err = fmt.Errorf("Failed to handle request: %v", err)
-		s.config.Logger.Printf("[ERR] socks: %v", err)
+		s.log.Error("socks: :err", wd.ErrParam(err))
 		return err
 	}
 
